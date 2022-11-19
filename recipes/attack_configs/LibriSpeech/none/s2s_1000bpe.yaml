@@ -59,7 +59,7 @@ sorting: random
 
 # Feature parameters
 sample_rate: 16000
-n_fft: 400
+n_fft: 1024
 n_mels: 80
 
 # Decoding parameters (only for text_pipeline)

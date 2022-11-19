@@ -106,3 +106,19 @@ pretrainer: !new:speechbrain.utils.parameter_transfer.Pretrainer
       model: !ref <pretrained_path>/model.ckpt
       tokenizer: !ref <pretrained_path>/tokenizer.ckpt
     collect_in: !ref <output_folder>
+
+
+sigma: 0.0
+# smoothing: !new:robust_speech.adversarial.defenses.smoothing.SpeechNoiseAugmentation
+#    sigma: !ref <sigma>
+#    # filter config
+#    filter: !name:robust_speech.adversarial.defenses.filter.ASNRWiener
+#       sr: 16000
+#       hop: 160
+#       nfft: 1024
+#    enhancer: null
+
+ddpm: !new:robust_speech.adversarial.defenses.ddpm.DDPM
+    sigma: !ref <sigma>
+    model_dir: /home/ubuntu/robust_speech/recipes/ddpm_model/diffwave-ljspeech-22kHz-1000578.pt
+    sr: 22050

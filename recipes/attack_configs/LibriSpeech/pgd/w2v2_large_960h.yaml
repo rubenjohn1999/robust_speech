@@ -9,7 +9,7 @@ tokenizers_folder: !ref <root>/tokenizers
 # -------------------------------------------------------------
 # Attack information
 snr: 30
-nb_iter: 1
+nb_iter: 50
 attack_class: !name:robust_speech.adversarial.attacks.pgd.SNRPGDAttack
   targeted: False
   snr: !ref <snr>
@@ -64,7 +64,7 @@ sorting: random
 
 # Feature parameters
 sample_rate: 16000
-n_fft: 400
+n_fft: 1024
 n_mels: 80
 
 # Decoding parameters (only for text_pipeline)
