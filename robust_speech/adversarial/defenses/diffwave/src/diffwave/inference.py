@@ -22,11 +22,13 @@ from argparse import ArgumentParser
 
 from diffwave.params import AttrDict, params as base_params
 from diffwave.model import DiffWave
+import time
 
 
 models = {}
 
-def predict(spectrogram=None, model_dir=None, params=None, device=torch.device('cuda'), fast_sampling=False):
+def predict(spectrogram=None, model_dir=None, params=base_params, device=torch.device('cuda'), fast_sampling=False):
+  
   # Lazy load model.
   if not model_dir in models:
     if os.path.exists(f'{model_dir}/weights.pt'):
@@ -34,7 +36,7 @@ def predict(spectrogram=None, model_dir=None, params=None, device=torch.device('
     else:
       checkpoint = torch.load(model_dir)
     model = DiffWave(AttrDict(base_params)).to(device)
-    model.load_state_dict(checkpoint['model'])
+    model.load_state_dict(checkpoint['model'], strict=False)
     model.eval()
     models[model_dir] = model
 
@@ -48,6 +50,24 @@ def predict(spectrogram=None, model_dir=None, params=None, device=torch.device('
     # beta -> training_noise_schedule
     # gamma -> alpha
     # eta -> beta
+
+    if not model.params.unconditional:
+      if len(spectrogram.shape) == 2:# Expand rank 2 tensors by adding a batch dimension.
+        spectrogram = spectrogram.unsqueeze(0)
+      spectrogram = spectrogram.to(device)
+      audio = torch.randn(spectrogram.shape[0], model.params.hop_samples * spectrogram.shape[-1], device=device)
+      
+    else:
+      # audio = torch.randn(1, params.audio_len, device=device)
+      audio = spectrogram.to(device)
+      spectrogram = None
+
+    # Forward pass with audio
+    # torchaudio.save("waveform_before_forward_ddpm.wav", audio.cpu(), 22050)
+    # audio = forward_ddpm(audio, model)
+    # torchaudio.save("waveform_after_forward_ddpm.wav", audio.cpu(), 22050)
+    # Reverse
+
     training_noise_schedule = np.array(model.params.noise_schedule)
     inference_noise_schedule = np.array(model.params.inference_noise_schedule) if fast_sampling else training_noise_schedule
 
@@ -63,20 +83,14 @@ def predict(spectrogram=None, model_dir=None, params=None, device=torch.device('
       for t in range(len(training_noise_schedule) - 1):
         if talpha_cum[t+1] <= alpha_cum[s] <= talpha_cum[t]:
           twiddle = (talpha_cum[t]**0.5 - alpha_cum[s]**0.5) / (talpha_cum[t]**0.5 - talpha_cum[t+1]**0.5)
-          T.append(t + twiddle)
+          T.append(t)
           break
+
     T = np.array(T, dtype=np.float32)
+    
 
-
-    if not model.params.unconditional:
-      if len(spectrogram.shape) == 2:# Expand rank 2 tensors by adding a batch dimension.
-        spectrogram = spectrogram.unsqueeze(0)
-      spectrogram = spectrogram.to(device)
-      audio = torch.randn(spectrogram.shape[0], model.params.hop_samples * spectrogram.shape[-1], device=device)
-    else:
-      audio = torch.randn(1, params.audio_len, device=device)
     noise_scale = torch.from_numpy(alpha_cum**0.5).float().unsqueeze(1).to(device)
-
+    print(T)
     for n in range(len(alpha) - 1, -1, -1):
       c1 = 1 / alpha[n]**0.5
       c2 = beta[n] / (1 - alpha_cum[n])**0.5
@@ -86,8 +100,30 @@ def predict(spectrogram=None, model_dir=None, params=None, device=torch.device('
         sigma = ((1.0 - alpha_cum[n-1]) / (1.0 - alpha_cum[n]) * beta[n])**0.5
         audio += sigma * noise
       audio = torch.clamp(audio, -1.0, 1.0)
+  # torchaudio.save("waveform_after_bacward_ddpm.wav", audio.cpu(), 22050)
+  time.sleep(5)
   return audio, model.params.sample_rate
 
+def forward_ddpm(audio, model):
+
+  model.eval()
+  beta = np.array(model.params.noise_schedule)
+  noise_level = np.cumprod(1 - beta)
+  noise_level = torch.tensor(noise_level.astype(np.float32))
+  device = audio.device
+  noise_level = noise_level.to(device)
+  spectrogram = None
+
+  for t in range(2):
+    noise_scale = noise_level[t].unsqueeze(0)
+    noise_scale_sqrt = noise_scale**0.5
+    noise = torch.randn_like(audio)
+    noisy_audio = noise_scale_sqrt * audio + (1.0 - noise_scale)**0.5 * noise
+    # strimg = "waveform_after_noisy_" + str(t) + ".wav"
+    # torchaudio.save(strimg, noisy_audio.cpu(), 22050)
+    audio = model(noisy_audio, torch.tensor([len(noise_level) - 1 - t], device=audio.device), spectrogram).squeeze(1)
+
+  return audio
 
 def main(args):
   if args.spectrogram_path:

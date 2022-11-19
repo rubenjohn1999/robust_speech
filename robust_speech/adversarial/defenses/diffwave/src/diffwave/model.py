@@ -101,11 +101,11 @@ class ResidualBlock(nn.Module):
     else: # unconditional model
       self.conditioner_projection = None
 
+
     self.output_projection = Conv1d(residual_channels, 2 * residual_channels, 1)
 
   def forward(self, x, diffusion_step, conditioner=None):
-    assert (conditioner is None and self.conditioner_projection is None) or \
-           (conditioner is not None and self.conditioner_projection is not None)
+    assert (conditioner is None and self.conditioner_projection is None) or (conditioner is not None and self.conditioner_projection is not None)
 
     diffusion_step = self.diffusion_projection(diffusion_step).unsqueeze(-1)
     y = x + diffusion_step
@@ -143,8 +143,7 @@ class DiffWave(nn.Module):
     nn.init.zeros_(self.output_projection.weight)
 
   def forward(self, audio, diffusion_step, spectrogram=None):
-    assert (spectrogram is None and self.spectrogram_upsampler is None) or \
-           (spectrogram is not None and self.spectrogram_upsampler is not None)
+    assert (spectrogram is None and self.spectrogram_upsampler is None) or (spectrogram is not None and self.spectrogram_upsampler is not None)
     x = audio.unsqueeze(1)
     x = self.input_projection(x)
     x = F.relu(x)
@@ -162,4 +161,5 @@ class DiffWave(nn.Module):
     x = self.skip_projection(x)
     x = F.relu(x)
     x = self.output_projection(x)
+    
     return x
