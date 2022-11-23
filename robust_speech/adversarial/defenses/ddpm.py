@@ -21,7 +21,6 @@ class DDPM(nn.Module):
 
     def transform(self, sigs):
         audio, sr = sigs, self.sr
-        # print("!!", audio.shape)
         audio = torch.clamp(audio[0], -1.0, 1.0)
 
         # if params.sample_rate != sr:
@@ -44,7 +43,6 @@ class DDPM(nn.Module):
             spectrogram = spectrogram.to('cuda:0')
             spectrogram = 20 * torch.log10(torch.clamp(spectrogram, min=1e-5)) - 20
             spectrogram = torch.clamp((spectrogram + 100) / 100, 0.0, 1.0)
-            # print("$$", spectrogram.shape)
             
             return spectrogram
 

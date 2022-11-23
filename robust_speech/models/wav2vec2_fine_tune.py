@@ -47,23 +47,14 @@ class W2VASR(AdvASRBrain):
         #     wavs = self.filter(wavs)
         tokens_bos, _ = batch.tokens_bos
         # wavs, wav_lens = wavs.to(self.device), wav_lens.to(self.device)
+        
         # Add augmentation if specified
-
-        # save wave
-        # torchaudio.save("waveform_before_smoothing.wav", wavs.cpu(), 16000)
-
         if hasattr(self.hparams, "smoothing") and self.hparams.smoothing:
             wavs = self.hparams.smoothing(wavs, wav_lens)
 
-        # torchaudio.save("waveform_after_smoothing.wav", wavs.cpu(), 16000)
-
+        # Add DDPM if specified 
         if hasattr(self.hparams, "ddpm") and self.hparams.ddpm:
             wavs = self.hparams.ddpm(wavs, wav_lens)
-
-        # torchaudio.save("waveform_after_ddpm.wav", wavs.cpu(), 16000)
-
-        # print("DONE")
-        # time.sleep(5)
 
         if stage == sb.Stage.TRAIN or stage == rs.Stage.ATTACK:
             if hasattr(self.modules, "env_corrupt"):
