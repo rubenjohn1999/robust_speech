@@ -135,6 +135,7 @@ dmypy.json
 .DS_Store
 .DS_Store?
 .idea
+.flac
 
 # Data folder
 /home/ubuntu/robust_speech/recipes/results/data
