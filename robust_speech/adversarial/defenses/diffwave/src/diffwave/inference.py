@@ -59,18 +59,23 @@ def predict(spectrogram=None, model_dir=None, params=base_params, device=torch.d
       
     else:
       # audio = torch.randn(1, params.audio_len, device=device)
+
+      # Instead of starting with noise, start with the waveform
       audio = spectrogram.to(device)
       spectrogram = None
 
-    # Forward pass with audio
     # torchaudio.save("waveform_before_forward_ddpm.wav", audio.cpu(), 22050)
+    # If we want to add noise through the forward pass of the ddpm,
+    # Forward pass the waveform through the ddpm
     # audio = forward_ddpm(audio, model)
     # torchaudio.save("waveform_after_forward_ddpm.wav", audio.cpu(), 22050)
-    # Reverse
 
     training_noise_schedule = np.array(model.params.noise_schedule)
+    # fast_sampling is passed as True so that the inference_noise_schedule is used
     inference_noise_schedule = np.array(model.params.inference_noise_schedule) if fast_sampling else training_noise_schedule
 
+
+    # Perform the reverse process to convert noise to waveform
     talpha = 1 - training_noise_schedule
     talpha_cum = np.cumprod(talpha)
 
@@ -90,7 +95,6 @@ def predict(spectrogram=None, model_dir=None, params=base_params, device=torch.d
     
 
     noise_scale = torch.from_numpy(alpha_cum**0.5).float().unsqueeze(1).to(device)
-    print(T)
     for n in range(len(alpha) - 1, -1, -1):
       c1 = 1 / alpha[n]**0.5
       c2 = beta[n] / (1 - alpha_cum[n])**0.5
@@ -100,10 +104,14 @@ def predict(spectrogram=None, model_dir=None, params=base_params, device=torch.d
         sigma = ((1.0 - alpha_cum[n-1]) / (1.0 - alpha_cum[n]) * beta[n])**0.5
         audio += sigma * noise
       audio = torch.clamp(audio, -1.0, 1.0)
+
   # torchaudio.save("waveform_after_bacward_ddpm.wav", audio.cpu(), 22050)
-  time.sleep(5)
   return audio, model.params.sample_rate
 
+
+'''
+This function is the forward process of the dppm, to convert waveform to noise. 
+'''
 def forward_ddpm(audio, model):
 
   model.eval()
@@ -114,13 +122,12 @@ def forward_ddpm(audio, model):
   noise_level = noise_level.to(device)
   spectrogram = None
 
-  for t in range(2):
+  for t in range(len(model.params.noise_schedule)):
     noise_scale = noise_level[t].unsqueeze(0)
     noise_scale_sqrt = noise_scale**0.5
     noise = torch.randn_like(audio)
     noisy_audio = noise_scale_sqrt * audio + (1.0 - noise_scale)**0.5 * noise
-    # strimg = "waveform_after_noisy_" + str(t) + ".wav"
-    # torchaudio.save(strimg, noisy_audio.cpu(), 22050)
+    # Passing the diffusion time step as len(noise_level) - 1 - t to add minimal amount of noise
     audio = model(noisy_audio, torch.tensor([len(noise_level) - 1 - t], device=audio.device), spectrogram).squeeze(1)
 
   return audio

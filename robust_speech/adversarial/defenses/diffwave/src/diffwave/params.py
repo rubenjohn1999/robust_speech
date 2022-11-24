@@ -51,6 +51,7 @@ params = AttrDict(
     dilation_cycle_length=10,
     unconditional = True,
     noise_schedule=np.linspace(1e-4, 0.05, 50).tolist(),
+    # Change this noise schedule (the array slicing) to vary 'k'
     inference_noise_schedule=[1e-4],
 
     # unconditional sample len

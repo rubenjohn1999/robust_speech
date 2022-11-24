@@ -19,12 +19,14 @@ class DDPM(nn.Module):
         self.sr = sr
 
 
+    """
+    Function to convert waveform to spectrogram. 
+    To be used for conditional inference only.
+    """
     def transform(self, sigs):
         audio, sr = sigs, self.sr
         audio = torch.clamp(audio[0], -1.0, 1.0)
 
-        # if params.sample_rate != sr:
-        #     raise ValueError(f'Invalid sample rate {sr}.')
         mel_args = {
             'sample_rate': sr,
             'win_length': 256 * 4,
@@ -46,21 +48,25 @@ class DDPM(nn.Module):
             
             return spectrogram
 
+
     def forward(self, sigs, sig_lens):
         """
         Pass the input through the DDPM model
         """
 
-        # spectrogram = # get your hands on a spectrogram in [N,C,W] format
-        
-        #spectrogram = self.transform(sigs)
-        #audio, sample_rate = diffwave_predict(spectrogram, self.model_dir, fast_sampling=False)
-        
+               
+        # Convert from 16KHz to 22KHz
         resampler = TT.Resample(16000, 22050)
         audio = resampler(sigs.cpu())
         audio = audio.to('cuda:0')
+
+        # If conditional, transform waveform to spectrogram. Remember to put unconditional=False in params.py for Conditional
         # audio = self.transform(audio)
+
+        # Pass to DDPM
         audio, sample_rate = diffwave_predict(audio, self.model_dir, fast_sampling=True)
+
+        # Convert it back to 16KHz
         resampler = TT.Resample(22050, 16000)
         audio = resampler(audio.cpu())
         audio = audio.to('cuda:0')
