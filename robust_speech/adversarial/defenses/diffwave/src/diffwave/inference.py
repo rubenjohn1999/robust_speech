@@ -27,7 +27,21 @@ import time
 
 models = {}
 
-def predict(spectrogram=None, model_dir=None, params=base_params, device=torch.device('cuda'), fast_sampling=False):
+def calculate_timestep(noise_model, sigma):
+  expected_alpha = 1/(1 + sigma**2)
+  alpha = [1 - ele for ele in noise_model]
+  best_value = 0
+  best_diff = float("inf")
+  i = 0
+  for ele in alpha:
+    if ele-expected_alpha > 0 and ele-expected_alpha < best_diff:
+        best_diff = ele-expected_alpha
+        best_value = i
+    i += 1
+    
+  return best_value
+
+def predict(spectrogram=None, model_dir=None, params=base_params, device=torch.device('cuda'), fast_sampling=False, sigma=0.02):
   
   # Lazy load model.
   if not model_dir in models:
@@ -93,11 +107,19 @@ def predict(spectrogram=None, model_dir=None, params=base_params, device=torch.d
 
     T = np.array(T, dtype=np.float32)
     
+    t_star = calculate_timestep(alpha, sigma)
+
+
+    delta = np.random.normal(0, scale=sigma, size=audio.shape).astype(np.float32)
+    delta = torch.tensor(delta).to(audio.device)
+
+    audio = alpha[t_star]**0.5 * (audio + delta)
 
     noise_scale = torch.from_numpy(alpha_cum**0.5).float().unsqueeze(1).to(device)
-    for n in range(len(alpha) - 1, -1, -1):
+    for n in range(t_star, -1, -1):
       c1 = 1 / alpha[n]**0.5
       c2 = beta[n] / (1 - alpha_cum[n])**0.5
+      
       audio = c1 * (audio - c2 * model(audio, torch.tensor([T[n]], device=audio.device), spectrogram).squeeze(1))
       if n > 0:
         noise = torch.randn_like(audio)

@@ -181,7 +181,8 @@ def train_distributed(replica_id, replica_count, port, args, params):
     dataset = from_gtzan(params, is_distributed=True)
   else:
     dataset = from_path(args.data_dirs, params, is_distributed=True)
-  device = torch.device('cuda', replica_id)
+  # device = torch.device('cuda', replica_id)
+  device="cpu"
   torch.cuda.set_device(device)
   model = DiffWave(params).to(device)
   model = DistributedDataParallel(model, device_ids=[replica_id])

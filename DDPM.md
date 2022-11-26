@@ -20,3 +20,12 @@ pip install .
 ```
 python evaluate.py attack_configs/LibriSpeech/none/w2v2_large_960h.yaml --root=/path/to/results/folder
 ```
+
+Training DDPM requires wav files
+```
+# in robust_speech/robust_speech/adversarial/defenses/diffwave
+mkdir wav
+sudo apt install ffmpeg
+bash convert_flac_to_wav.sh 
+```
+

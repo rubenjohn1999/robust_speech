@@ -52,8 +52,8 @@ params = AttrDict(
     unconditional = True,
     noise_schedule=np.linspace(1e-4, 0.05, 50).tolist(),
     # Change this noise schedule (the array slicing) to vary 'k'
-    inference_noise_schedule=[1e-4],
+    inference_noise_schedule=np.linspace(1e-4, 0.05, 50).tolist(),
 
     # unconditional sample len
-    audio_len = 16000*5, # unconditional_synthesis_samples
+    audio_len = 22050*5, # unconditional_synthesis_samples
 )
