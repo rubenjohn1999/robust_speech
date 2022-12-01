@@ -69,7 +69,7 @@ class DDPM(nn.Module):
 
         # Pass to DDPM
         audio = sigs
-        audio, sample_rate = diffwave_predict(audio, self.model_dir, fast_sampling=True)
+        audio, sample_rate = diffwave_predict(audio, self.model_dir, fast_sampling=True, sigma=self.sigma)
 
         # Convert it back to 16KHz
         # resampler = TT.Resample(22050, 16000)

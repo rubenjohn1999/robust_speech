@@ -123,3 +123,7 @@ ddpm: !new:robust_speech.adversarial.defenses.ddpm.DDPM
     # change this path based on directory structure
     model_dir: /home/ubuntu/robust_speech/recipes/ddpm_model/diffwave-ljspeech-22kHz-1000578.pt
     sr: 22050
+    # filter: !name:robust_speech.adversarial.defenses.filter.ASNRWiener
+    #    sr: 16000
+    #    hop: 160
+    #    nfft: 1024
