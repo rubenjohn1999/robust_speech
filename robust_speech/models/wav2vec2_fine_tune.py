@@ -56,6 +56,8 @@ class W2VASR(AdvASRBrain):
         if hasattr(self.hparams, "ddpm") and self.hparams.ddpm:
             wavs = self.hparams.ddpm(wavs, wav_lens)
 
+        #torchaudio.save("waveform_after_ddpm.wav", wavs.cpu(), 16000)
+
         if stage == sb.Stage.TRAIN or stage == rs.Stage.ATTACK:
             if hasattr(self.modules, "env_corrupt"):
                 wavs_noise = self.modules.env_corrupt(wavs, wav_lens)

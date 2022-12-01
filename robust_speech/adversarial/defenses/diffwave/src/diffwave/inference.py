@@ -102,17 +102,19 @@ def predict(spectrogram=None, model_dir=None, params=base_params, device=torch.d
       for t in range(len(training_noise_schedule) - 1):
         if talpha_cum[t+1] <= alpha_cum[s] <= talpha_cum[t]:
           twiddle = (talpha_cum[t]**0.5 - alpha_cum[s]**0.5) / (talpha_cum[t]**0.5 - talpha_cum[t+1]**0.5)
-          T.append(t)
+          T.append(t + twiddle)
           break
 
     T = np.array(T, dtype=np.float32)
-    
+
+    # Calculate according to Eq 4 in paper
     t_star = calculate_timestep(alpha, sigma)
 
 
     delta = np.random.normal(0, scale=sigma, size=audio.shape).astype(np.float32)
     delta = torch.tensor(delta).to(audio.device)
-
+    # Re-scale input
+    # NOTE. We add randomized smoothing here now. The input yaml file must NOT have smoothing otherwise it will add noise twice.
     audio = alpha[t_star]**0.5 * (audio + delta)
 
     noise_scale = torch.from_numpy(alpha_cum**0.5).float().unsqueeze(1).to(device)
@@ -121,13 +123,17 @@ def predict(spectrogram=None, model_dir=None, params=base_params, device=torch.d
       c2 = beta[n] / (1 - alpha_cum[n])**0.5
       
       audio = c1 * (audio - c2 * model(audio, torch.tensor([T[n]], device=audio.device), spectrogram).squeeze(1))
+
+      # This if statement, looks like it is adding too much noise. It is part of the formula though.
+      # You can check with sigma =0.05 and saving audio inside
       if n > 0:
         noise = torch.randn_like(audio)
         sigma = ((1.0 - alpha_cum[n-1]) / (1.0 - alpha_cum[n]) * beta[n])**0.5
         audio += sigma * noise
       audio = torch.clamp(audio, -1.0, 1.0)
-
-  # torchaudio.save("waveform_after_bacward_ddpm.wav", audio.cpu(), 22050)
+      # fname = "waveform_in_ddpm_" + str(n) + ".wav"
+      # torchaudio.save(fname, audio.cpu(), 16000)
+  # torchaudio.save("waveform_after_bacward_ddpm.wav", audio.cpu(), 16000)
   return audio, model.params.sample_rate
 
 
