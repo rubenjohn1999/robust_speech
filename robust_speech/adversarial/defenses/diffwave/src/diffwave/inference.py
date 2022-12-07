@@ -27,9 +27,8 @@ import time
 
 models = {}
 
-def calculate_timestep(noise_model, sigma):
+def calculate_timestep(alpha, sigma):
   expected_alpha = 1/(1 + sigma**2)
-  alpha = [1 - ele for ele in noise_model]
   best_value = 0
   best_diff = float("inf")
   i = 0
@@ -38,7 +37,6 @@ def calculate_timestep(noise_model, sigma):
         best_diff = ele-expected_alpha
         best_value = i
     i += 1
-    
   return best_value
 
 def predict(spectrogram=None, model_dir=None, params=base_params, device=torch.device('cuda'), fast_sampling=False, sigma=0.02):
@@ -64,6 +62,7 @@ def predict(spectrogram=None, model_dir=None, params=base_params, device=torch.d
     # beta -> training_noise_schedule
     # gamma -> alpha
     # eta -> beta
+
 
     if not model.params.unconditional:
       if len(spectrogram.shape) == 2:# Expand rank 2 tensors by adding a batch dimension.
@@ -102,18 +101,22 @@ def predict(spectrogram=None, model_dir=None, params=base_params, device=torch.d
       for t in range(len(training_noise_schedule) - 1):
         if talpha_cum[t+1] <= alpha_cum[s] <= talpha_cum[t]:
           twiddle = (talpha_cum[t]**0.5 - alpha_cum[s]**0.5) / (talpha_cum[t]**0.5 - talpha_cum[t+1]**0.5)
-          T.append(t)
+          T.append(t + twiddle)
           break
 
     T = np.array(T, dtype=np.float32)
     
     t_star = calculate_timestep(alpha, sigma)
+    # print("t* = ", t_star)
+    # t_star = 1
 
 
     delta = np.random.normal(0, scale=sigma, size=audio.shape).astype(np.float32)
     delta = torch.tensor(delta).to(audio.device)
 
     audio = alpha[t_star]**0.5 * (audio + delta)
+    audio = torch.clamp(audio, -1.0, 1.0)
+    # torchaudio.save("waveform_after_rescaling.wav", audio.cpu(), 16000)
 
     noise_scale = torch.from_numpy(alpha_cum**0.5).float().unsqueeze(1).to(device)
     for n in range(t_star, -1, -1):
@@ -126,8 +129,13 @@ def predict(spectrogram=None, model_dir=None, params=base_params, device=torch.d
         sigma = ((1.0 - alpha_cum[n-1]) / (1.0 - alpha_cum[n]) * beta[n])**0.5
         audio += sigma * noise
       audio = torch.clamp(audio, -1.0, 1.0)
+      # filename = "waveform_in_ddpm_iter_" + str(n) + ".wav"
+      # torchaudio.save(filename, audio.cpu(), 16000)
+  
+  #print("DONE")
+  # time.sleep(10)
 
-  # torchaudio.save("waveform_after_bacward_ddpm.wav", audio.cpu(), 22050)
+  # torchaudio.save("waveform_after_bacward_ddpm.wav", audio.cpu(), 16000)
   return audio, model.params.sample_rate
 
 

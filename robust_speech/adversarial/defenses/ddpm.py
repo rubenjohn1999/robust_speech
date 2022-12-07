@@ -13,10 +13,14 @@ logger = logging.getLogger(__name__)
 
 
 class DDPM(nn.Module):
-    def __init__(self, sigma, model_dir, sr):
+    def __init__(self, sigma, model_dir, sr, filter=None):
         self.sigma = sigma
         self.model_dir = model_dir
         self.sr = sr
+        if filter is not None:
+            self.filter = filter(sigma=sigma)
+        else:
+            self.filter = None
 
 
     """
@@ -56,21 +60,23 @@ class DDPM(nn.Module):
 
                
         # Convert from 16KHz to 22KHz
-        resampler = TT.Resample(16000, 22050)
-        audio = resampler(sigs.cpu())
-        audio = audio.to('cuda:0')
+        # resampler = TT.Resample(16000, 22050)
+        # audio = resampler(sigs.cpu())
+        # audio = audio.to('cuda:0')
 
         # If conditional, transform waveform to spectrogram. Remember to put unconditional=False in params.py for Conditional
         # audio = self.transform(audio)
 
         # Pass to DDPM
+        audio = sigs
         audio, sample_rate = diffwave_predict(audio, self.model_dir, fast_sampling=True)
 
         # Convert it back to 16KHz
-        resampler = TT.Resample(22050, 16000)
-        audio = resampler(audio.cpu())
-        audio = audio.to('cuda:0')
-        
+        # resampler = TT.Resample(22050, 16000)
+        # audio = resampler(audio.cpu())
+        # audio = audio.to('cuda:0')
+        if self.filter is not None:
+            audio = self.filter(audio)
         return audio
 
     def __call__(self, *args, **kwargs):
