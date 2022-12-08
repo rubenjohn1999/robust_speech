@@ -79,3 +79,5 @@ Ensure you do this to make sure that the changes made to inference.py (i.e. the 
 Then go ahead an run the evaluate.py file as you would normally. 
 
 NOTE : In both these configurations, the smoothing block is commented except for the line ```sigma: 0.02```, double check this before you go ahead and run. This is because we do smoothing in the DDPM itself.
+
+Also ensure the path to the checkpoint file is correct in the yaml file!
