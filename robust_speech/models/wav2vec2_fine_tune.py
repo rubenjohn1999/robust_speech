@@ -52,9 +52,10 @@ class W2VASR(AdvASRBrain):
         if hasattr(self.hparams, "smoothing") and self.hparams.smoothing:
             wavs = self.hparams.smoothing(wavs, wav_lens)
 
-        # Add DDPM if specified 
-        if hasattr(self.hparams, "ddpm") and self.hparams.ddpm:
-            wavs = self.hparams.ddpm(wavs, wav_lens)
+        if not stage == rs.Stage.ATTACK:
+            # Add DDPM if specified
+            if hasattr(self.hparams, "ddpm") and self.hparams.ddpm:
+                wavs = self.hparams.ddpm(wavs, wav_lens)
 
         #torchaudio.save("waveform_after_ddpm.wav", wavs.cpu(), 16000)
 

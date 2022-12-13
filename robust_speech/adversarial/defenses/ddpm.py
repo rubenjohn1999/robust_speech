@@ -1,3 +1,7 @@
+'''
+
+'''
+
 import numpy as np
 import logging
 import torch
@@ -5,7 +9,7 @@ import torch.nn as nn
 from torch.autograd import Function
 from torch.autograd import gradcheck
 import speechbrain as sb
-from diffwave.inference import predict as diffwave_predict
+from diffwave.inferencefromt import predict as diffwave_predict
 import torchaudio.transforms as TT
 
 
@@ -58,23 +62,9 @@ class DDPM(nn.Module):
         Pass the input through the DDPM model
         """
 
-               
-        # Convert from 16KHz to 22KHz
-        # resampler = TT.Resample(16000, 22050)
-        # audio = resampler(sigs.cpu())
-        # audio = audio.to('cuda:0')
-
-        # If conditional, transform waveform to spectrogram. Remember to put unconditional=False in params.py for Conditional
-        # audio = self.transform(audio)
-
         # Pass to DDPM
         audio = sigs
         audio, sample_rate = diffwave_predict(audio, self.model_dir, fast_sampling=True, sigma=self.sigma)
-
-        # Convert it back to 16KHz
-        # resampler = TT.Resample(22050, 16000)
-        # audio = resampler(audio.cpu())
-        # audio = audio.to('cuda:0')
 
         if self.filter:
             audio = self.filter(audio)
