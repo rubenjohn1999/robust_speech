@@ -33,6 +33,12 @@ class S2SASR(AdvASRBrain):
             wavs = self.hparams.smoothing(wavs, wav_lens)
         # wavs, wav_lens = wavs.to(self.device), wav_lens.to(self.device)
         # Add augmentation if specified
+        # print(wavs.shape, wav_lens.shape, wav_lens)
+        # add DDPM
+        if hasattr(self.hparams, "ddpm") and self.hparams.ddpm:
+            wavs = self.hparams.ddpm(wavs, wav_lens)
+
+        # print(wavs.shape, wav_lens.shape, wav_lens)
         if stage == sb.Stage.TRAIN:
             if hasattr(self.modules, "env_corrupt"):
                 wavs_noise = self.modules.env_corrupt(wavs, wav_lens)

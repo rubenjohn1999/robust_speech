@@ -128,4 +128,13 @@ dmypy.json
 # Pyre type checker
 .pyre/
 *.wav
-*.sh
+
+# OS generated files #
+######################
+.DS_Store
+.DS_Store?
+.idea
+.flac
+
+# Data folder
+/home/ubuntu/robust_speech/recipes/results/data
