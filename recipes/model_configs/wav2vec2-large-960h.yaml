@@ -121,9 +121,9 @@ smoothing: !new:robust_speech.adversarial.defenses.smoothing.SpeechNoiseAugmenta
 ddpm: !new:robust_speech.adversarial.defenses.ddpm.DDPM
     sigma: !ref <sigma>
     # change this path based on directory structure
-    model_dir: /home/ubuntu/robust_speech/recipes/ddpm_model/diffwave-ljspeech-22kHz-1000578.pt
-    sr: 22050
-    # filter: !name:robust_speech.adversarial.defenses.filter.ASNRWiener
-    #    sr: 16000
-    #    hop: 160
-    #    nfft: 1024
+    model_dir: /root/work/robust_speech/recipes/ddpm_model/unconditional-weights-691998.pt
+    sr: 16000
+    filter: !name:robust_speech.adversarial.defenses.filter.ASNRWiener
+      sr: 16000
+      hop: 160
+      nfft: 1024

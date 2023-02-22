@@ -217,5 +217,5 @@ smoothing: !new:robust_speech.adversarial.defenses.smoothing.SpeechNoiseAugmenta
 
 ddpm: !new:robust_speech.adversarial.defenses.ddpm.DDPM
     sigma: !ref <sigma>
-    model_dir: /home/ubuntu/robust_speech/recipes/ddpm_model/diffwave-ljspeech-22kHz-1000578.pt
+    model_dir: /root/work/robust_speech/recipes/ddpm_model/diffwave-ljspeech-22kHz-1000578.pt
     sr: 16000
